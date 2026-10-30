@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'json'
+require 'json_schemer'
 
 module RubyLLM
   # A Chat is a conversation with an AI model. It holds the messages
@@ -820,7 +821,9 @@ module RubyLLM
 
     # Sets the schema for structured output. Accepts a JSON Schema Hash, a
     # Schematist::Schema class or instance, or any object responding to
-    # +to_json_schema+. Returns +self+.
+    # +to_json_schema+. Completed responses are validated before being added
+    # to the conversation; invalid output raises StructuredOutputError with
+    # token usage preserved. Returns +self+.
     #
     #   class PersonSchema < Schematist::Schema
     #     string :name
@@ -1218,9 +1221,20 @@ module RubyLLM
       result
     end
 
+    def validate_structured_output!(result)
+      return unless schema
+      return if result.tool_call? && result.tool_call_stop?
+
+      valid = result.stopped? && JSONSchemer.schema(schema.fetch(:schema)).valid?(result.parsed)
+      raise StructuredOutputError.new(message_result: result) unless valid
+    rescue JSON::ParserError
+      raise StructuredOutputError.new(message_result: result)
+    end
+
     def record_generated_message(result, usage_start, streaming: false)
       raise_if_cancelled!
       link_completion_usage(result, usage_start)
+      validate_structured_output!(result)
       run_callbacks(:before_message) unless streaming
       add_message result
       run_callbacks(:after_message, result)

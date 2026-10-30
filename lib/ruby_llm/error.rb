@@ -65,6 +65,22 @@ module RubyLLM
     end
   end
 
+  # Raised when a structured response is incomplete or fails its JSON schema.
+  # The safe exception message contains no provider output. Usage remains
+  # available through #tokens even when validation fails.
+  class StructuredOutputError < Error
+    attr_reader :message_result
+
+    def initialize(message_result:)
+      @message_result = message_result
+      super('Provider returned invalid structured output')
+    end
+
+    def tokens
+      message_result.tokens
+    end
+  end
+
   # Raised when a deprecated API is used and
   # Configuration#deprecation_behavior is +:raise+. With the default
   # +:warn+, deprecations are logged instead.

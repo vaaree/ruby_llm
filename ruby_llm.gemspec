@@ -57,6 +57,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'faraday-retry', '>= 1'
   spec.add_dependency 'json', '< 4'
   spec.add_dependency 'marcel', '>= 1.0', '< 3'
+  spec.add_dependency 'json_schemer', '~> 2.5'
   spec.add_dependency 'schematist', '~> 1.1'
   spec.add_dependency 'zeitwerk', '~> 2'
 end
