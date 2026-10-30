@@ -1,0 +1,25 @@
+name: CommerceOS SDK contracts
+on:
+  pull_request:
+  push:
+    branches: [codex/commerceos-provider-contracts]
+    tags: ['v*-commerceos.*']
+permissions:
+  contents: read
+jobs:
+  offline-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+      - name: Install runtime and offline test dependencies
+        run: |
+          gem build ruby_llm.gemspec
+          gem install ./ruby_llm-*.gem --no-document
+          gem install rspec minitest webmock --no-document
+      - name: Provider contracts without network calls
+        run: |
+          ruby -Ilib -e 'Dir["spec/contracts/*_test.rb"].sort.each { |file| require_relative file }'
+          ruby -Ilib -S rspec --options /dev/null spec/ruby_llm/structured_output_validation_spec.rb spec/ruby_llm/transport/request_bounds_spec.rb

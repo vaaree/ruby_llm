@@ -1,6 +1,12 @@
 # frozen_string_literal: true
 
-require 'spec_helper'
+require 'ruby_llm'
+require 'rspec/core'
+require 'webmock/rspec'
+
+RSpec.configure do |settings|
+  settings.before { RubyLLM::Transport::Connection.cache.clear }
+end
 
 RSpec.describe RubyLLM::Transport::RequestBounds do
   let(:config) do
