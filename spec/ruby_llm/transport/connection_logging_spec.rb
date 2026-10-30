@@ -17,6 +17,10 @@ RSpec.describe RubyLLM::Transport::Connection do
       instance_double(
         RubyLLM::Configuration,
         request_timeout: 300,
+        open_timeout: nil,
+        request_deadline: nil,
+        max_response_bytes: nil,
+        log_bodies: false,
         max_retries: 3,
         retry_interval: 0.1,
         retry_max_interval: 30,
@@ -40,7 +44,8 @@ RSpec.describe RubyLLM::Transport::Connection do
       expect(options[:bodies]).to be(false)
     end
 
-    it 'enables body logging when log level is DEBUG' do
+    it 'enables body logging only when explicitly configured' do
+      allow(config).to receive(:log_bodies).and_return(true)
       logger = Logger.new(File::NULL, level: Logger::DEBUG)
       allow(RubyLLM).to receive(:logger).and_return(logger)
 
@@ -50,6 +55,16 @@ RSpec.describe RubyLLM::Transport::Connection do
       options = middleware.instance_variable_get(:@formatter).instance_variable_get(:@options)
 
       expect(options[:bodies]).to be(true)
+    end
+
+    it 'keeps bodies private at DEBUG by default' do
+      allow(RubyLLM).to receive(:logger).and_return(Logger.new(File::NULL, level: Logger::DEBUG))
+      connection = described_class.new(provider, config).connection
+      handler = connection.builder.handlers.find { |h| h.klass == Faraday::Response::Logger }
+      middleware = handler.build(->(_env) { Faraday::Response.new })
+      options = middleware.instance_variable_get(:@formatter).instance_variable_get(:@options)
+
+      expect(options[:bodies]).to be(false)
     end
 
     it 'uses the configured Faraday adapter' do

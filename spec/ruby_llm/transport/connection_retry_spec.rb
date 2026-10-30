@@ -17,6 +17,10 @@ RSpec.describe RubyLLM::Transport::Connection do
       instance_double(
         RubyLLM::Configuration,
         request_timeout: 300,
+        open_timeout: nil,
+        request_deadline: nil,
+        max_response_bytes: nil,
+        log_bodies: false,
         max_retries: 3,
         retry_interval: 0.1,
         retry_max_interval: 30,

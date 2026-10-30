@@ -6,6 +6,8 @@ require 'faraday/retry'
 require 'ruby_llm/transport/error_middleware'
 require 'ruby_llm/transport/signing_middleware'
 require 'ruby_llm/transport/usage_middleware'
+require 'ruby_llm/transport/request_bounds'
+require 'ruby_llm/transport/eval_budget_middleware'
 require 'timeout'
 
 module RubyLLM
@@ -19,7 +21,8 @@ module RubyLLM
       # The key a shared Faraday connection is cached under: the provider,
       # whether it streams, and everything ::build reads.
       Settings = Struct.new(
-        :provider, :stream, :api_base, :adapter, :timeout, :proxy, :logger, :log_bodies, :log_regexp_timeout,
+        :provider, :stream, :api_base, :adapter, :timeout, :open_timeout, :proxy, :logger, :log_bodies,
+        :log_regexp_timeout,
         :max_retries, :retry_interval, :retry_max_interval, :retry_interval_randomness, :retry_backoff_factor,
         keyword_init: true
       )
@@ -54,6 +57,7 @@ module RubyLLM
         connection = Faraday.new(settings.api_base) do |faraday|
           setup_timeout(faraday, settings)
           setup_logging(faraday, settings)
+          faraday.use RequestBounds
           setup_retry(faraday, settings)
           setup_middleware(faraday, settings)
           setup_http_proxy(faraday, settings)
@@ -155,9 +159,10 @@ module RubyLLM
           api_base: api_base,
           adapter: @config.faraday_adapter,
           timeout: @config.request_timeout,
+          open_timeout: @config.open_timeout,
           proxy: @config.http_proxy,
           logger: RubyLLM.logger,
-          log_bodies: RubyLLM.logger.debug?,
+          log_bodies: @config.log_bodies,
           log_regexp_timeout: @config.log_regexp_timeout,
           max_retries: @config.max_retries,
           retry_interval: @config.retry_interval,
@@ -173,12 +178,14 @@ module RubyLLM
       def prepare(request)
         request.headers.merge!(@headers).merge!(@provider.headers)
         context = request.options.context ||= {}
+        context[RequestBounds::CONTEXT_KEY] = { deadline: @config.request_deadline, max_bytes: @config.max_response_bytes }
         context[ErrorMiddleware::PROVIDER_KEY] = @provider
         context[SigningMiddleware::CONTEXT_KEY] = @signer if @signer
       end
 
       def self.setup_timeout(faraday, settings)
         faraday.options.timeout = settings.timeout
+        faraday.options.open_timeout = settings.open_timeout unless settings.open_timeout.nil?
       end
 
       def self.setup_logging(faraday, settings)
@@ -213,6 +220,7 @@ module RubyLLM
           exceptions: retry_exceptions
         }
         faraday.use :llm_usage
+        faraday.use :llm_eval_budget
       end
 
       def self.stream_delivered?(env)
@@ -228,6 +236,7 @@ module RubyLLM
         faraday.request :json
         faraday.use :llm_signing
         faraday.use JsonResponse
+        faraday.use RequestBounds::Response
         faraday.adapter(settings.adapter)
         faraday.use :llm_errors
       end

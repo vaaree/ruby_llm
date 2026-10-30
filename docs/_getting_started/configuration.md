@@ -215,6 +215,10 @@ RubyLLM.configure do |config|
 
   # Connection Settings
   config.request_timeout = Integer
+  config.open_timeout = Numeric # nil uses the adapter default
+  config.request_deadline = Numeric # Absolute monotonic time, callable, or nil
+  config.max_response_bytes = Integer # nil is unlimited
+  config.log_bodies = false # Explicit opt-in for HTTP debug body logging
   config.video_generation_timeout = Integer
   config.video_generation_poll_interval = Integer
   config.max_retries = Integer

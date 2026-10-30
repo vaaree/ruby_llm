@@ -79,6 +79,31 @@ RubyLLM.configure do |config|
 end
 ```
 
+### Shared deadlines and response bounds
+
+Use a context for a request or job whose HTTP calls share an absolute deadline:
+
+```ruby
+deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 30
+context = RubyLLM.context do |config|
+  config.open_timeout = 5
+  config.request_deadline = deadline
+  config.max_response_bytes = 65_536
+end
+context.chat.ask("Summarize the supplied text")
+```
+
+`request_deadline` includes HTTP attempts and retry delays, raises
+`RubyLLM::DeadlineExceededError`, and may also be a callable returning an absolute
+monotonic deadline. Connection and response timeouts are capped by its remaining
+time. `max_response_bytes` counts raw bytes before JSON parsing or streaming
+callbacks and raises `RubyLLM::ResponseTooLargeError` when exceeded. Both default
+to `nil`; `open_timeout` also defaults to the HTTP adapter's default. These bounds
+apply to provider HTTP connections, rather than WebSockets or MCP transports.
+
+Request and response bodies are excluded from HTTP debug logs by default, even
+at DEBUG level. Set `config.log_bodies = true` only when body logging is intended.
+
 ### HTTP Proxy Support
 
 Route requests through a proxy:

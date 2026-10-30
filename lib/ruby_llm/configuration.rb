@@ -207,6 +207,32 @@ module RubyLLM
     option :request_timeout, 300
 
     ##
+    # :attr_accessor: open_timeout
+    #
+    # Seconds allowed to establish an HTTP connection. Default: nil (adapter default).
+    option :open_timeout, nil
+
+    ##
+    # :attr_accessor: request_deadline
+    #
+    # Absolute Process::CLOCK_MONOTONIC deadline shared by HTTP attempts and retry
+    # delays. A callable may return the deadline. Default: nil (no shared deadline).
+    option :request_deadline, nil
+
+    ##
+    # :attr_accessor: max_response_bytes
+    #
+    # Maximum bytes received for one HTTP response, including streamed responses.
+    # Default: nil (unlimited).
+    option :max_response_bytes, nil
+
+    ##
+    # :attr_accessor: log_bodies
+    #
+    # Include request and response bodies in debug logs. Default: false.
+    option :log_bodies, false
+
+    ##
     # :attr_accessor: max_retries
     #
     # Number of times to retry failed requests. Default: 3.
