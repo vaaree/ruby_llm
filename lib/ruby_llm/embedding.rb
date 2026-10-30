@@ -32,10 +32,18 @@ module RubyLLM
     # The id of the model that produced the vectors, as a String.
     attr_reader :model
 
-    def initialize(vectors:, model:, sparse_vectors: nil, input_tokens: nil, reported_cost: nil) # :nodoc:
+    # Unknown returned identity stays nil; requested identity is recorded separately.
+    attr_reader :response_id, :provider_request_id
+    attr_accessor :requested_model
+
+    def initialize(vectors:, model:, sparse_vectors: nil, input_tokens: nil, reported_cost: nil,
+                   requested_model: nil, response_id: nil, provider_request_id: nil) # :nodoc:
       @vectors = vectors
       @sparse_vectors = sparse_vectors
       @model = model
+      @requested_model = requested_model
+      @response_id = response_id
+      @provider_request_id = provider_request_id
       @input_tokens = input_tokens
       @reported_cost = reported_cost
     end
@@ -140,6 +148,8 @@ module RubyLLM
         result = Accounting::Usage.owned_by(owner) do
           provider_instance.embed(text, model:, dimensions:, task_type:, title:, with:, provider_options:)
         end
+        result.requested_model = model.id
+        result.model_info = model
         event[:result] = result
         event[:response_model] = result.model
         event[:tokens] = result.tokens

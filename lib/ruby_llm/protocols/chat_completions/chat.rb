@@ -134,6 +134,9 @@ module RubyLLM
             reported_cost: reported_cost(usage),
             finish_reason: finish_reason,
             model: data['model'],
+            requested_model: @model&.id,
+            response_id: data['id'],
+            provider_request_id: raw.respond_to?(:headers) ? raw.headers['x-request-id'] : nil,
             raw: raw
           )
         end

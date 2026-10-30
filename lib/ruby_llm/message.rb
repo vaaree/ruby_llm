@@ -35,6 +35,10 @@ module RubyLLM
     # The ID of the model that produced the message, +nil+ on user messages.
     attr_reader :model
 
+    # Requested identity and provider correlation are kept separate from returned model.
+    attr_reader :response_id, :provider_request_id
+    attr_accessor :requested_model
+
     attr_writer :model_info # :nodoc:
 
     # The tool calls the assistant requested, as a Hash of ToolCall objects
@@ -93,6 +97,9 @@ module RubyLLM
       @config = options[:config]
       @attachments = Attachment.wrap(options[:attachments], config: @config)
       @model = options[:model]
+      @requested_model = options[:requested_model]
+      @response_id = options[:response_id]
+      @provider_request_id = options[:provider_request_id]
       @supplied_cost = coerce_value(options[:cost], Cost)
       @tool_call_id = options[:tool_call_id]
       @tokens = options[:tokens] || Tokens.new(
@@ -261,6 +268,9 @@ module RubyLLM
         content: content,
         attachments: list_to_h(attachments),
         model: model,
+        requested_model: requested_model,
+        response_id: response_id,
+        provider_request_id: provider_request_id,
         cost: @supplied_cost && cost.to_h,
         reported_cost: tokens.reported_cost,
         tool_calls: tool_calls&.transform_values(&:to_h),

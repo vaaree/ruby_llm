@@ -12,7 +12,8 @@ module RubyLLM
             [question.name, parse_answer(body.fetch('answers').fetch(question.name.to_s), question)]
           end
           RubyLLM::Judgment.new(
-            answers:, model: body['model'], raw: response, model_info: @model,
+            answers:, model: body['model'], raw: response, model_info: @model, requested_model: @model&.id,
+                                response_id: body['id'], provider_request_id: response.respond_to?(:headers) ? response.headers['x-request-id'] : nil,
             tokens: Tokens.new(input: body.dig('usage', 'input_tokens'), output: body.dig('usage', 'output_tokens'))
           )
         rescue KeyError, NoMethodError, TypeError => e

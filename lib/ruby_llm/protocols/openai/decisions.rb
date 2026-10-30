@@ -30,7 +30,8 @@ module RubyLLM
           answers = questions.values.zip(body.fetch('answers')).to_h do |question, answer|
             [question.name, parse_answer(answer, question)]
           end
-          RubyLLM::Judgment.new(answers:, model: body.fetch('model'), raw: response, model_info: @model,
+          RubyLLM::Judgment.new(answers:, model: body['model'], raw: response, model_info: @model, requested_model: @model&.id,
+                                response_id: body['id'], provider_request_id: response.respond_to?(:headers) ? response.headers['x-request-id'] : nil,
                                 tokens: parse_tokens(body['usage']))
         rescue KeyError, NoMethodError, TypeError => e
           raise Error.new("OpenAI Decisions returned an invalid judgment: #{e.message}", response:)

@@ -30,7 +30,8 @@ module RubyLLM
           vectors = vectors.first if single
           sparse_vectors = parse_sparse_vectors(rows, single: single)
 
-          Embedding.new(vectors:, sparse_vectors:, model:, input_tokens:,
+          Embedding.new(vectors:, sparse_vectors:, model: data['model'], requested_model: model, input_tokens:,
+                        response_id: data['id'], provider_request_id: response.respond_to?(:headers) ? response.headers['x-request-id'] : nil,
                         reported_cost: reported_cost(data['usage'] || {}))
         end
 

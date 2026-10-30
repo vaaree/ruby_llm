@@ -29,6 +29,10 @@ module RubyLLM
     # The id of the model that generated the image.
     attr_reader :model
 
+    # Unknown returned identity stays nil; requested identity is recorded separately.
+    attr_reader :response_id, :provider_request_id
+    attr_accessor :requested_model
+
     # Generates an image from +prompt+ and returns an Image. Most code
     # calls this through RubyLLM.paint.
     #
@@ -95,6 +99,10 @@ module RubyLLM
           provider_instance.paint(prompt, model:, size:, count:, with:, mask:, provider_options:)
         end
         images = Support::Utils.to_safe_array(result)
+        images.each do |image|
+          image.requested_model = model.id
+          image.model_info = model
+        end
         event[:result] = result
         event[:response_model] = images.first&.model
         event[:tokens] = Tokens.aggregate(images.map(&:tokens))
@@ -113,12 +121,16 @@ module RubyLLM
       @config || RubyLLM.config
     end
 
-    def initialize(url: nil, data: nil, mime_type: nil, revised_prompt: nil, model: nil, usage: {})
+    def initialize(url: nil, data: nil, mime_type: nil, revised_prompt: nil, model: nil, usage: {},
+                   requested_model: nil, response_id: nil, provider_request_id: nil)
       @url = url
       @data = data
       @mime_type = mime_type
       @revised_prompt = revised_prompt
       @model = model
+      @requested_model = requested_model
+      @response_id = response_id
+      @provider_request_id = provider_request_id
       @raw_usage = usage
     end
     # :startdoc:

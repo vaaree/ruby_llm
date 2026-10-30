@@ -21,13 +21,21 @@ module RubyLLM
     # Returns the actual model ID reported by the provider.
     attr_reader :model
 
+    # Unknown returned identity stays nil; requested identity is recorded separately.
+    attr_reader :response_id, :provider_request_id
+    attr_accessor :requested_model
+
     # Returns the original provider response.
     attr_reader :raw
 
-    def initialize(answers:, model:, tokens: Tokens.new, raw: nil, model_info: nil) # :nodoc:
+    def initialize(answers:, model:, tokens: Tokens.new, raw: nil, model_info: nil,
+                   requested_model: nil, response_id: nil, provider_request_id: nil) # :nodoc:
       @answers = answers.dup.freeze
       @answer_keys = answers.keys.to_h { |key| [key.to_s, key] }.freeze
       @model = model
+      @requested_model = requested_model
+      @response_id = response_id
+      @provider_request_id = provider_request_id
       @tokens = tokens
       @raw = raw
       @model_info = model_info
@@ -96,6 +104,7 @@ module RubyLLM
         result = Accounting::Usage.owned_by(owner) do
           provider_instance.judge(input, questions:, model:, with: attachments, provider_options:)
         end
+        result.requested_model = model.id
         event[:result] = result
         event[:tokens] = result.tokens
         event[:cost] = result.cost

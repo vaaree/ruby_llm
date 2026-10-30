@@ -1232,6 +1232,7 @@ module RubyLLM
     end
 
     def record_generated_message(result, usage_start, streaming: false)
+      result.requested_model = model.id
       raise_if_cancelled!
       link_completion_usage(result, usage_start)
       validate_structured_output!(result)

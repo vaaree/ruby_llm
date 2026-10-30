@@ -41,7 +41,10 @@ module RubyLLM
               url: image_data['url'],
               mime_type: 'image/png', # DALL-E typically returns PNGs
               revised_prompt: image_data['revised_prompt'],
-              model: model,
+              model: data['model'],
+              requested_model: model,
+              response_id: data['id'],
+              provider_request_id: response.respond_to?(:headers) ? response.headers['x-request-id'] : nil,
               data: image_data['b64_json'],
               usage: index.zero? ? (data['usage'] || {}) : {}
             )
